@@ -1,0 +1,562 @@
+---
+title: "Main analysis"
+author: "Isabelle Boulangeat"
+date: "02/05/2018"
+output: 
+  html_document:
+      keep_md: yes
+      theme: cosmo
+      highlight: tango
+      number_sections: true
+      toc: true
+---
+
+<!-- library(rmarkdown) -->
+<!-- library(knitr) -->
+<!-- knit("MainAnalysis.Rmd", "Readme.md") -->
+
+# Set up
+
+## Load parameters and model
+
+Also load plot functions
+```{r}
+source("params.r")
+source("model_fct.r")
+source("plot_fct.r")
+source("analysis_fct.r")
+```
+
+## Libraries
+
+```{r}
+library(rootSolve)
+library(cluster)
+```
+
+## Test model
+
+```{r}
+T0 = c(T=0.3, S=0.3, B = 0.3, H=5*375)
+out = solveEq(func = model, init =T0, parms = init.params, maxsteps = 10000)
+(eq = out$eq)
+```
+#  Equilibrium along environmental gradient
+
+## Vegetation alone
+
+```{r, results='hide'}
+calcEq.veg = data.frame(t(eqveg.fct.Vect(1:grad.div, init.params, par.name, par.clim)))
+newEq.veg = data.frame(matrix(unlist(calcEq.veg[[1]]), ncol = 4, byrow = T))
+colnames(newEq.veg) = c("T", "S", "B", "H")
+newEq.veg[,"G"] = 1 - newEq.veg[,"S"] - newEq.veg[,"B"] - newEq.veg[,"T"]
+lambdamax.veg = unlist(calcEq.veg[[2]])
+reac.veg = unlist(calcEq.veg[[3]])
+newEq.veg.h0 = newEq.veg
+newEq.veg.h0[,"H"] = 0
+newEq.veg.For = newEq.veg[,"T"] + newEq.veg[,"B"]
+```
+
+## Vegetation and herbivores
+
+```{r}
+calcEq.all = data.frame(t(eqall.fct.Vect(1:grad.div, init.params, par.name, par.clim, model)))
+newEq.all = data.frame(matrix(unlist(calcEq.all[[1]]), ncol = 4, byrow = T))
+colnames(newEq.all) = c("T", "S", "B", "H")
+newEq.all[,"G"] = 1 - newEq.all[,"S"] - newEq.all[,"B"] - newEq.all[,"T"]
+oscillations = data.frame(matrix(unlist(calcEq.all[[2]]), nrow = grad.div, byrow = TRUE))
+colnames(oscillations) = c("T", "S", "B", "H")
+lambdamax.all = unlist(calcEq.all[[3]])
+reac.all = unlist(calcEq.all[[4]])
+newEq.all.For = newEq.all[,"T"] + newEq.all[,"B"]
+```
+
+##  dominance zones
+
+```{r}
+Smax = which.max(newEq.all[,"S"])
+Bmax = which.max(newEq.all[,"B"])
+Hmax = which.max(newEq.all[,"H"])
+open = newEq.all[,"G"]
+dominance = c("T","B", "O")[apply(cbind(newEq.all[,c("T","B")],open), 1, which.max)]
+open.veg = newEq.veg[,"G"]
+dominance.veg = c("T","B", "O")[apply(cbind(newEq.veg[,c("T","B")],open.veg), 1, which.max)]
+O2B = which(dominance=="B") [1]
+B2T = which(dominance=="T") [1]
+O2B.veg = which(dominance.veg=="B") [1]
+B2T.veg = which(dominance.veg=="T") [1]
+```
+
+## Equilibrium along the environmental gradient: figure
+
+```{r, include=FALSE}
+grad.colo = function(trans=255){
+  res = c(rep(colo(trans)["G"],as.integer(O2B)-1), rep(colo(trans)["B"], as.integer(B2T)-as.integer(O2B)), rep(colo(trans)["T"],51-as.integer(B2T)+1))
+  return(res)
+}
+grad.colo.v = function(trans=255){
+  res = c(rep(colo(trans)["G"],as.integer(O2B.veg)-1), rep(colo(trans)["B"], as.integer(B2T.veg)+as.integer(O2B.veg)), rep(colo(trans)["T"],51-as.integer(B2T.veg)+1))
+  return(res)
+}
+```
+
+```{r equilibrium, fig.height=12, fig.width=5, echo=FALSE}
+par(mfrow = c(3,1), cex = 1.2, mar = c(3,4,3,1))
+plot.template(xlim = c(0,50), ylim = c(0,1), xticks = c(6,11), yticks = c(6,11), xlab = "Temperature", ylab = "Vegetation proportion", col.bg = "white", col.grid = NA, plot.axis = F)
+lines(newEq.veg[,"T"]~gradient, col = colo()["T"], type = "l", lwd = 1.5)
+lines(newEq.veg[,"B"]~gradient, col = colo()["B"], type = "l", lwd = 1.5)
+lines(newEq.veg[,"S"]~gradient, col = colo()["S"], type = "l", lwd = 1.5)
+lines(newEq.veg[,"G"]~gradient, col = colo()["G"], type = "l", lwd = 1.5)
+axis(1, pos=0, at = seq(0,50,le=6), labels = temp.range, cex.axis=.9)
+axis(2, pos=0, at = seq(0,1,.2), labels = seq(0,1,.2), cex.axis=.9, las = 2)
+points(B2T.veg-1, 1, pch=1)
+title("(a)")
+plot.template(xlim = c(0,50), ylim = c(0,1), xticks = c(6,11), yticks = c(6,11), xlab = "Temperature", ylab = "Vegetation proportion", col.bg = "white", col.grid = NA, plot.axis = F)
+lines(newEq.all[,"T"]~gradient, col = colo()["T"], type = "l", lwd = 1.5)
+lines(newEq.all[,"B"]~gradient, col = colo()["B"], type = "l", lwd = 1.5)
+lines(newEq.all[,"S"]~gradient, col = colo()["S"], type = "l", lwd = 1.5)
+lines(newEq.all[,"G"]~gradient, col = colo()["G"], type = "l", lwd = 1.5)
+axis(1, pos=0, at = seq(0,50,le=6), labels = temp.range, cex.axis=.9)
+axis(2, pos=0, at = seq(0,1,.2), labels = seq(0,1,.2), cex.axis=.9, las =2)
+points(Hmax-1, 1, pch=8)
+points(O2B-1, 1, pch=19)
+points(B2T-1, 1, pch=19)
+title("(b)")
+par(cex=1.2)
+plot.template(xlim = c(0,50), ylim = c(0,3), xticks = c(6,11), yticks = c(6,11), xlab = "Temperature", ylab = "browser population biomass (tons per km2)", col.bg = NA, col.grid = NA,plot.axis=FALSE)
+axis(1, pos=0, at = seq(0,50,le=6), labels = temp.range, cex.axis=.9)
+axis(2, pos = 0, at = seq(0,3,0.5), labels = seq(0,3,0.5))
+lines(newEq.all[,"H"]/1000~gradient, col = 1, type = "l", lwd = 1.5)
+lines(newEq.veg[,"H"]/1000~gradient, col = 1, lwd = 1.5, lty = 2)
+points(Hmax-1, 3, pch=8)
+points(O2B-1, 3, pch=19)
+points(B2T-1, 3, pch=19)
+title("(c)")
+```
+
+# Transition metrics
+
+##  deltaN
+
+```{r}
+deltaN.all = deltaN.veg =  rep(NA, 50)
+require(cluster)
+dd2<-daisy(newEq.all[,-4], metric="euclidean")
+dd.veg2 <- daisy(newEq.veg[,-4], metric="euclidean")
+for (g in 1:50)
+{
+deltaN.all[g] = as.matrix(dd2)[g,g+1]
+deltaN.veg[g] = as.matrix(dd.veg2)[g,g+1]
+}
+```
+
+
+## Return to equilibrium after climate change
+
+```{r}
+simu.time = 10000 # max time of simu before reach eq
+
+calcTime.all = calcTime.Vect(1:50, newEq.all, simu.time=10000, woH=FALSE,init.params=init.params, model)
+deltaT.all = unlist(calcTime.all[1,])
+integraleV.all = unlist(calcTime.all[2,]) 
+
+calcTime.veg = calcTime.Vect(1:50, newEq.veg, simu.time=10000, woH=TRUE, init.params=init.params, model)
+deltaT.veg = unlist(calcTime.veg[1,])
+integraleV.veg = unlist(calcTime.veg[2,]) 
+```
+
+## All metrics of transient dynamics along the gradient: figure
+
+```{r transient, fig.height=15, fig.width=10, echo=FALSE}
+layout(matrix(1:8, nrow = 4, byrow = F), width = c(1,1), height=c(1,1,1,.3))
+#=-----
+par(cex=1.4, mar=c(1,4,3,1))
+plot.template(xlim = c(0,50), ylim = c(0,1), xticks = c(6,11), yticks = c(6,11), xlab = "", ylab = "Proportion of mature tree stands", col.bg = NA, col.grid = NA,plot.axis=FALSE)
+axis(1, pos=0, at = seq(0,50,le=6), labels = temp.range, cex.axis=.9)
+axis(2, pos = 0, at = seq(0,1,0.2), labels = seq(0,1,0.2))
+lines(newEq.all.For~gradient, col = 1, type = "l", lwd = 1.5)
+lines(newEq.veg.For~gradient, col = 1, lwd = 1.5, lty = 2)
+points(Hmax-1, newEq.all.For[which.max(newEq.all[,"H"])], pch=8)
+points(O2B-1, newEq.all.For[which(dominance=="B") [1]], pch=19)
+points(B2T-1, newEq.all.For[which(dominance=="T") [1]], pch=19)
+points(B2T.veg-1, newEq.veg.For[which(dominance.veg=="T") [1]], pch=1)
+mtext("(a)", 3, font = 2, cex=1.5)
+#=-----
+par(cex=1.4, mar=c(1,4,3,1))
+plot.template(xlim = c(0,50), ylim = c(0,0.01), xlab = "", ylab = "Asymptotic resilience", xticks = c(6,11), yticks = c(6,11), col.bg = NA, col.grid = NA, plot.axis=FALSE)
+axis(1, pos=0, at = seq(0,50,le=6), labels = temp.range, cex.axis=.9)
+axis(2, pos = 0, at = seq(0,0.01,0.002), labels = seq(0,0.01,0.002))
+lines(-lambdamax.all~gradient, col = 1, type = "l", lwd = 1.5)
+lines(-lambdamax.veg~gradient, col = 1, lwd = 1.5, lty = 2)
+points(Hmax-1, -lambdamax.all[which.max(newEq.all[,"H"])], pch=8)
+points(O2B-1, -lambdamax.all[which(dominance=="B") [1]], pch=19)
+points(B2T-1, -lambdamax.all[which(dominance=="T") [1]], pch=19)
+points(B2T.veg-1, -lambdamax.veg[which(dominance.veg=="T") [1]], pch=1)
+mtext("(b)", 3, font = 2, cex=1.5)
+#=-----
+par(cex=1.4, mar=c(1,4,3,1))
+plot.template(xlim = c(0,50), ylim = c(-0.3,0), xlab = "", ylab = "Initial resilience", xticks = c(6,11), yticks = c(6,11), col.bg = NA, col.grid = NA, plot.axis=FALSE)
+axis(1, pos=-0.3, at = seq(0,50,le=6), labels = temp.range, cex.axis=.9)
+axis(2, pos = 0, at = seq(-0.3,0,0.05), labels = seq(-0.3,0,0.05))
+lines(-reac.all~gradient, col = 1, type = "l", lwd = 1.5)
+lines(-reac.veg~gradient, col = 1, lwd = 1.5, lty = 2)
+points(Hmax-1, -reac.all[which.max(newEq.all[,"H"])], pch=8)
+points(O2B-1, -reac.all[which(dominance=="B") [1]], pch=19)
+points(B2T-1, -reac.all[which(dominance=="T") [1]], pch=19)
+points(B2T.veg-1, -reac.veg[which(dominance.veg=="T") [1]], pch=1)
+mtext("(c)", 3, font = 2, cex=1.5)
+#=-----
+par(cex=1.4, mar=c(1,4,1,1))
+plot(1:10,1:10, ylab="", xlab="", xaxt="n", yaxt="n", type="n", bty="n")
+mtext("Temperature", 1, line = -1.5, font = 2, col = 1, cex = 1.4)
+par(cex=1.4, mar=c(1,4,3,1))
+plot.template(xlim = c(0,50), ylim = c(0,0.15), xlab = "", ylab = "Exposure", xticks = c(6,11), yticks = c(6,11), col.bg = NA, col.grid = NA, plot.axis=FALSE)
+axis(1, pos=0, at = seq(0,50,le=6), labels = temp.range, cex.axis=.9)
+axis(2, pos = 0, at = seq(0,0.15,0.05), labels = seq(0,0.15,0.05))
+lines(c(NA,deltaN.all)~gradient, col = 1, type = "l", lwd = 1.5)
+lines(c(NA, deltaN.veg)~gradient, col = 1, lwd = 1.5, lty = 2)
+points(Hmax-1, deltaN.all[which.max(newEq.all[,"H"])-1], pch=8)
+points(O2B-1, deltaN.all[which(dominance=="B") [1] -1], pch=19)
+points(B2T-1, deltaN.all[which(dominance=="T") [1] -1], pch=19)
+points(B2T.veg-1, deltaN.veg[which(dominance.veg=="T") [1] -1], pch=1)
+mtext("(d)", 3, font = 2, cex=1.5)
+#=-----
+par(cex=1.4, mar=c(1,4,3,1))
+plot.template(xlim = c(0,50), ylim = c(0,8000), xlab = "", ylab = "Sensitivity", xticks = c(6,11), yticks = c(6,11), col.bg = NA, col.grid = NA, plot.axis=FALSE)
+axis(1, pos=0, at = seq(0,50,le=6), labels =temp.range, cex.axis=.9)
+axis(2, pos = 0, at = seq(0,8000,2000), labels = seq(0,8000,2000))
+lines(c(NA,deltaT.all)~gradient, col = 1, type = "l", lwd = 1.5)
+lines(c(NA, deltaT.veg)~gradient, col = 1, lwd = 1.5, lty = 2)
+points(Hmax-1, deltaT.all[which.max(newEq.all[,"H"])-1], pch=8)
+points(O2B-1, deltaT.all[which(dominance=="B") [1] -1], pch=19)
+points(B2T-1, deltaT.all[which(dominance=="T") [1] -1], pch=19)
+points(B2T.veg-1, deltaT.veg[which(dominance.veg=="T") [1] -1], pch=1)
+mtext("(e)", 3, font = 2, cex=1.5)
+#=-----
+par(cex=1.4, mar=c(1,4,3,1))
+plot.template(xlim = c(0,50), ylim = c(0,35), xlab = "", ylab = "Cumulative state changes", xticks = c(6,11), yticks = c(6,11), col.bg = NA, col.grid = NA, plot.axis=FALSE)
+axis(1, pos=0, at = seq(0,50,le=6), labels = temp.range, cex.axis=.9)
+axis(2, pos = 0, at = seq(0,35,5), labels = seq(0,35,5))
+lines(c(NA,integraleV.all)~gradient, col = 1, type = "l", lwd = 1.5)
+lines(c(NA, integraleV.veg)~gradient, col = 1, lwd = 1.5, lty = 2)
+points(Hmax-1, integraleV.all[which.max(newEq.all[,"H"])-1], pch=8)
+points(O2B-1, integraleV.all[which(dominance=="B") [1] -1], pch=19)
+points(B2T-1, integraleV.all[which(dominance=="T") [1] -1], pch=19)
+points(B2T.veg-1, integraleV.veg[which(dominance.veg=="T") [1] -1], pch=1)
+mtext("(f)", 3, font = 2, cex=1.5)
+#=-----
+par(cex=1.4, mar=c(1,4,1,1))
+plot(1:10,1:10, ylab="", xlab="", xaxt="n", yaxt="n", type="n", bty="n")
+mtext("Temperature \n(final temperature)", 1, line = -1, font = 2, col = 1, cex = 1.4)
+```
+
+# Correlations between metrics
+
+## Correlations and tests
+
+```{r}
+(cLDt = c(cor(-lambdamax.veg[-1], deltaT.veg, method="spearman"), cor(-lambdamax.all[-1], deltaT.all, method="spearman")) )
+cor.test(-lambdamax.veg[-1], deltaT.veg, method="spearman")
+cor.test(-lambdamax.all[-1], deltaT.all,  method="spearman")
+
+(cLR = c(cor(-lambdamax.veg[-1], -reac.veg[-1], method="spearman"), cor(-lambdamax.all[-1], -reac.all[-1], method="spearman")) )
+cor.test(-lambdamax.veg[-1], -reac.veg[-1], method="spearman")
+cor.test(-lambdamax.all[-1], -reac.all[-1], method="spearman")
+
+(cDnSn = c(cor(deltaN.veg, integraleV.veg, method="spearman"), cor(deltaN.all, integraleV.all, method="spearman")) )
+cor.test(deltaN.veg, integraleV.veg, method="spearman") 
+cor.test(deltaN.all, integraleV.all, method="spearman") 
+
+(cDtSn = c(cor(deltaT.veg, integraleV.veg, method="spearman"), cor(deltaT.all, integraleV.all, method="spearman")) )
+cor.test(deltaT.veg, integraleV.veg, method="spearman") 
+cor.test(deltaT.all, integraleV.all, method="spearman") 
+
+(cRDt = c(cor(-reac.veg[-1], deltaT.veg, method="spearman"), cor(-reac.all[-1], deltaT.all, method="spearman")) )
+cor.test(-reac.veg[-1], deltaT.veg, method="spearman")
+cor.test(-reac.all[-1], deltaT.all, method="spearman") # NS
+
+(cLSn = c(cor(-lambdamax.veg[-1], integraleV.veg, method="spearman"), cor(-lambdamax.all[-1], integraleV.all, method="spearman")) )
+cor.test(-lambdamax.veg[-1], integraleV.veg, method="spearman") 
+cor.test(-lambdamax.all[-1], integraleV.all, method="spearman")
+
+(cRSn = c(cor(-reac.veg[-1], integraleV.veg, method="spearman"), cor(-reac.all[-1], integraleV.all, method="spearman")) )
+cor.test(-reac.veg[-1], integraleV.veg, method="spearman") # NS
+cor.test(-reac.all[-1], integraleV.all, method="spearman") # NS
+
+(cDnDt = c(cor(deltaN.veg, deltaT.veg, method="spearman"), cor(deltaN.all, deltaT.all, method="spearman")) )
+cor.test(deltaN.veg, deltaT.veg, method="spearman") 
+cor.test(deltaN.all, deltaT.all, method="spearman") 
+
+(cDnL = c(cor(deltaN.veg, -lambdamax.veg[-1], method="spearman"), cor(deltaN.all, -lambdamax.all[-1], method="spearman")) )
+cor.test(deltaN.veg, -lambdamax.veg[-1], method="spearman") 
+cor.test(deltaN.all, -lambdamax.all[-1], method="spearman") 
+
+(cDnR = c(cor(deltaN.veg, -reac.veg[-1], method="spearman"), cor(deltaN.all, -reac.all[-1], method="spearman")) )
+cor.test(deltaN.veg, -reac.veg[-1], method="spearman") # NS
+cor.test(deltaN.all, -reac.all[-1], method="spearman") # NS
+```
+
+## Correlations : figure
+
+```{r correlations, fig.height=9, fig.width=15, echo=FALSE}
+layout(matrix(c(1,1,1,1,2,3,3,3,4,4,5,5,5,5,5), nrow = 3, byrow = TRUE), width = c(1,1,1,1,1), height=c(1,1, lcm(2)))
+par(cex = 1, mar = c(4,4,4,2))
+
+# panel1
+xx= matrix(c(cRSn, cLSn, cDnSn, cDtSn), ncol = 2, byrow = T)
+par(lwd = 1)
+barplot(t(abs(xx)), beside = TRUE, ylim = c(0,1), ylab = "Absolute spearman correlation", main = "Correlation with cumulative state changes", space = c(0.1, 0.9))
+par(lwd = 2)
+barplot(t(abs(xx)), beside = TRUE, col = 1, density = c(0, 5, 5,5,0,0,0,0), border = NA, add = T, space = c(0.1, 0.9))
+axis(1, at = c(2, 5, 8, 11), labels = c("initial\n resilience", "asymptotic\n resilience", "exposure", "sensitivity"), tick =FALSE, cex.axis = 1.2)
+text(c(1.5,2.5), y=0.35, "n.s")
+box(which = "plot", col = "grey", lwd = 2)
+
+# panel2
+xx= matrix(c(cLR), ncol = 2, byrow = T)
+par(lwd = 1)
+barplot(t(abs(xx)), beside = TRUE, ylim = c(0,1), ylab = "Absolute spearman correlation", main = "Initial and\n asymptotic resilience", bty = "o", space = c(0.1, 0.9))
+par(lwd = 2)
+barplot(t(abs(xx)), beside = TRUE, col = 1, density = 5, border = NA, add = T, space = c(0.1, 0.9))
+box(which = "plot", col = "grey", lwd = 2)
+# axis(1, at = c(1.8,2,2.2), labels = c(expression(R[0]), "vs", expression(R[infinity])), tick =FALSE)
+
+# panel3
+xx= matrix(c(cRDt, cLDt, cDnDt), ncol = 2, byrow = T)
+par(lwd = 1)
+barplot(t(abs(xx)), beside = TRUE, ylim = c(0,1), ylab = "Absolute spearman correlation", main = paste("Correlation with sensitivity (return time)"), space = c(0.1, 0.9))
+par(lwd = 2)
+barplot(t(abs(xx)), beside = TRUE, col = 1, density = c(0,0,5,5,0,0), border = NA, add = T, space = c(0.1, 0.9))
+axis(1, at = c(2, 5, 8), labels = c("initial\n resilience", "asymptotic\n resilience", "exposure"), tick =FALSE, cex.axis = 1.2)
+text(c(2.5), y=0.2, "n.s")
+box(which = "plot", col = "grey", lwd = 2)
+
+# panel4
+xx= matrix(c(cDnR, cDnL), ncol = 2, byrow = T)
+par(lwd = 1)
+barplot(t(abs(xx)), beside = TRUE, ylim = c(0,1), ylab = "Absolute spearman correlation", main = "Correlation with exposure", space = c(0.1, 0.9))
+par(lwd = 2)
+barplot(t(abs(xx)), beside = TRUE, col = 1, density = c(0,5, 5,5), border = NA, add = T, space = c(0.1, 0.9))
+axis(1, at = c(2, 5), labels = c("initial\n resilience", "asymptotic\n resilience"), tick =FALSE, cex.axis = 1.2)
+text(c(1.5,2.5), y=0.1, "n.s")
+box(which = "plot", col = "grey", lwd = 2)
+
+#panel 5
+par(mar = c(0.5, 0.1, 0.1, 0.1), bg="white")
+plot(1:10,1:10, type = "n", bty="n", xaxt = "n", yaxt="n")
+legend("top", legend = c("no herbivores", "with herbivores", "positive correlation", "negative correlation"), fill = c("grey20", "grey80", "white", 1), density =c(NA,NA,NA,10) , ncol=4, bty="n", pt.cex = 3, cex =1.3)
+```
+
+
+# Simulations of trajectories
+
+## Simulation runs
+```{r}
+simu1 = simulation(newEq.all, grad.start=15, grad.pars=15+1, 10000, woH=FALSE, init.params =init.params, model)
+simu1.veg = simulation(newEq.veg, grad.start=15, grad.pars=15+1, 10000, woH=TRUE, init.params =init.params, model)
+simu2 = simulation(newEq.all, grad.start=35, grad.pars=35+1, 10000, woH=FALSE, init.params =init.params, model)
+simu2.veg = simulation(newEq.veg, grad.start=35, grad.pars=35+1, 10000, woH=TRUE, init.params =init.params, model)
+```
+
+## Trajectories' examples figure
+
+```{r trajectories, echo=FALSE, fig.height=4, fig.width=12}
+par(mfrow = c(1,3))
+par(cex=1, mar=c(4,4,3,1),lwd = 1)
+#range(simu2.veg[,"S"])
+miny = 0.093
+maxy = 0.096
+step = 0.001
+plot.template(xlim = c(0,500), ylim = c(miny,maxy), xlab = "Time", ylab = "Regeneration state proportion", xticks = c(6,11), yticks = c(6,11), col.bg = NA, col.grid = NA, plot.axis=FALSE)
+axis(1, pos = miny, at = seq(0,500,100), labels = seq(0,500,100))
+axis(2, pos = 0, at = seq(miny,maxy,step), labels = seq(miny,maxy,step))
+lines(simu2.veg[,"S"], col = 1)
+title("Without browser")
+abline(h=newEq.veg[35,"S"], lty = 2)
+abline(h=newEq.veg[36,"S"], lty = 2)
+
+#range(simu2[,"S"])
+miny = 0.209
+maxy = 0.215
+step = 0.002
+plot.template(xlim = c(0,500), ylim = c(miny,maxy), xlab = "Time", ylab = "Regeneration state proportion", xticks = c(6,11), yticks = c(6,11), col.bg = NA, col.grid = NA, plot.axis=FALSE)
+axis(1, pos = miny, at = seq(0,500,100), labels = seq(0,500,100))
+axis(2, pos = 0, at = seq(miny,maxy,step), labels = seq(miny,maxy,step))
+lines(simu2[,"S"], col = 1)
+title("With browser")
+abline(h=newEq.all[35,"S"], lty = 2)
+abline(h=newEq.all[36,"S"], lty = 2)
+
+par(mar=c(4,4,1,1))
+#range(simu2[,"H"])
+miny = 2500
+maxy = 2520
+step = 5
+plot.template(xlim = c(0,500), ylim = c(miny,maxy), xlab = "Time", ylab = "Herbivore biomass", xticks = c(6,11), yticks = c(6,11), col.bg = NA, col.grid = NA, plot.axis=FALSE)
+axis(1, pos = miny, at = seq(0,500,100), labels = seq(0,500,100))
+axis(2, pos = 0, at = seq(miny,maxy,step), labels = seq(miny,maxy,step))
+lines(simu2[,"H"], col = 1)
+abline(h=newEq.all[35,"H"], lty = 2)
+abline(h=newEq.all[36,"H"], lty = 2)
+```
+
+# Variation for a mix-feeder animal
+
+## Test of the model
+
+```{r}
+T0 = c(T=0.3, S=0.3, B = 0.3, H=5*375)
+require(rootSolve)
+out = solveEq(func = modelG, init =T0, parms = init.params, maxsteps = 10000)
+(eq = out$eq)
+```
+
+## Equilibrium along the gradient
+
+```{r}
+calcEq.all = data.frame(t(eqall.fct.Vect(1:grad.div, init.params, par.name, par.clim, modelG)))
+newEq.all = data.frame(matrix(unlist(calcEq.all[[1]]), ncol = 4, byrow = T))
+colnames(newEq.all) = c("T", "S", "B", "H")
+newEq.all[,"G"] = 1 - newEq.all[,"S"] - newEq.all[,"B"] - newEq.all[,"T"]
+oscillations = data.frame(matrix(unlist(calcEq.all[[2]]), nrow = grad.div, byrow = TRUE))
+colnames(oscillations) = c("T", "S", "B", "H")
+lambdamax.all = unlist(calcEq.all[[3]])
+reac.all = unlist(calcEq.all[[4]])
+
+Smax = which.max(newEq.all[,"S"])
+Bmax = which.max(newEq.all[,"B"])
+Hmax = which.max(newEq.all[,"H"])
+open = newEq.all[,"G"]
+dominance = c("T","B", "O")[apply(cbind(newEq.all[,c("T","B")],open), 1, which.max)]
+open.veg = newEq.veg[,"G"]
+dominance.veg = c("T","B", "O")[apply(cbind(newEq.veg[,c("T","B")],open.veg), 1, which.max)]
+O2B = which(dominance=="B") [1]
+B2T = which(dominance=="T") [1]
+O2B.veg = which(dominance.veg=="B") [1]
+B2T.veg = which(dominance.veg=="T") [1]
+```
+
+```{r, include=FALSE}
+grad.colo = function(trans=255){
+  res = c(rep(colo(trans)["G"],as.integer(O2B)-1), rep(colo(trans)["B"], as.integer(B2T)-as.integer(O2B)), rep(colo(trans)["T"],51-as.integer(B2T)+1))
+  return(res)
+}
+```
+
+```{r equiMixFeed, echo=FALSE, fig.height=8, fig.width=5}
+par(mfrow = c(2,1), cex = 1.2, mar = c(3,4,3,1))
+
+plot.template(xlim = c(0,50), ylim = c(0,1), xticks = c(6,11), yticks = c(6,11), xlab = "Temperature", ylab = "Vegetation proportion", col.bg = "white", col.grid = NA, plot.axis = F)
+lines(newEq.all[,"T"]~gradient, col = colo()["T"], type = "l", lwd = 1.5)
+lines(newEq.all[,"B"]~gradient, col = colo()["B"], type = "l", lwd = 1.5)
+lines(newEq.all[,"S"]~gradient, col = colo()["S"], type = "l", lwd = 1.5)
+lines(newEq.all[,"G"]~gradient, col = colo()["G"], type = "l", lwd = 1.5)
+axis(1, pos=0, at = seq(0,50,le=6), labels = temp.range, cex.axis=.9)
+axis(2, pos=0, at = seq(0,1,.2), labels = seq(0,1,.2), cex.axis=.9, las =2)
+points(Hmax-1, 1, pch=8)
+points(O2B-1, 1, pch=19)
+points(B2T-1, 1, pch=19)
+title("(a)")
+
+par(cex=1.2)
+plot.template(xlim = c(0,50), ylim = c(0,6), xticks = c(6,11), yticks = c(6,11), xlab = "Temperature", ylab = "browser population biomass (tons per km2)", col.bg = NA, col.grid = NA,plot.axis=FALSE)
+axis(1, pos=0, at = seq(0,50,le=6), labels = temp.range, cex.axis=.9)
+axis(2, pos = 0, at = seq(0,6,1), labels = seq(0,3,0.5))
+lines(newEq.all[,"H"]/1000~gradient, col = 1, type = "l", lwd = 1.5)
+points(Hmax-1, 6, pch=8)
+points(O2B-1, 6, pch=19)
+points(B2T-1, 6, pch=19)
+title("(b)")
+```
+
+## Transient metrics
+
+
+```{r}
+newEq.all.For = newEq.all[,"T"] + newEq.all[,"B"]
+
+deltaN.all =rep(NA, 50)
+require(cluster)
+dd2<-daisy(newEq.all[,-4], metric="euclidean")
+for (g in 1:50)
+{
+  deltaN.all[g] = as.matrix(dd2)[g,g+1]
+}
+simu.time = 10000 # max time of simu before reach eq
+calcTime.all = calcTime.Vect(1:50, newEq.all, simu.time=10000, woH=FALSE,init.params=init.params, model=modelG)
+deltaT.all = unlist(calcTime.all[1,])
+integraleV.all = unlist(calcTime.all[2,]) 
+```
+
+```{r transientMisFeed, echo=FALSE, fig.height=15, fig.width=10}
+layout(matrix(1:8, nrow = 4, byrow = F), width = c(1,1), height=c(1,1,1,.3))
+par(cex=1.4, mar=c(1,4,3,1))
+plot.template(xlim = c(0,50), ylim = c(0,1), xticks = c(6,11), yticks = c(6,11), xlab = "", ylab = "Proportion of mature tree stands", col.bg = NA, col.grid = NA,plot.axis=FALSE)
+axis(1, pos=0, at = seq(0,50,le=6), labels = temp.range, cex.axis=.9)
+axis(2, pos = 0, at = seq(0,1,0.2), labels = seq(0,1,0.2))
+lines(newEq.all.For~gradient, col = 1, type = "l", lwd = 1.5)
+points(Hmax-1, newEq.all.For[which.max(newEq.all[,"H"])], pch=8)
+points(O2B-1, newEq.all.For[which(dominance=="B") [1]], pch=19)
+points(B2T-1, newEq.all.For[which(dominance=="T") [1]], pch=19)
+mtext("(a)", 3, font = 2, cex=1.5)
+#=-----
+par(cex=1.4, mar=c(1,4,3,1))
+plot.template(xlim = c(0,50), ylim = c(0,0.01), xlab = "", ylab = "Asymptotic resilience", xticks = c(6,11), yticks = c(6,11), col.bg = NA, col.grid = NA, plot.axis=FALSE)
+axis(1, pos=0, at = seq(0,50,le=6), labels = temp.range, cex.axis=.9)
+axis(2, pos = 0, at = seq(0,0.01,0.002), labels = seq(0,0.01,0.002))
+lines(-lambdamax.all~gradient, col = 1, type = "l", lwd = 1.5)
+points(Hmax-1, -lambdamax.all[which.max(newEq.all[,"H"])], pch=8)
+points(O2B-1, -lambdamax.all[which(dominance=="B") [1]], pch=19)
+points(B2T-1, -lambdamax.all[which(dominance=="T") [1]], pch=19)
+mtext("(b)", 3, font = 2, cex=1.5)
+#=-----
+par(cex=1.4, mar=c(1,4,3,1))
+plot.template(xlim = c(0,50), ylim = c(-0.3,0), xlab = "", ylab = "Initial resilience", xticks = c(6,11), yticks = c(6,11), col.bg = NA, col.grid = NA, plot.axis=FALSE)
+axis(1, pos=-0.3, at = seq(0,50,le=6), labels = temp.range, cex.axis=.9)
+axis(2, pos = 0, at = seq(-0.3,0,0.05), labels = seq(-0.3,0,0.05))
+lines(-reac.all~gradient, col = 1, type = "l", lwd = 1.5)
+points(Hmax-1, -reac.all[which.max(newEq.all[,"H"])], pch=8)
+points(O2B-1, -reac.all[which(dominance=="B") [1]], pch=19)
+points(B2T-1, -reac.all[which(dominance=="T") [1]], pch=19)
+mtext("(c)", 3, font = 2, cex=1.5)
+#=-----
+par(cex=1.4, mar=c(1,4,1,1))
+plot(1:10,1:10, ylab="", xlab="", xaxt="n", yaxt="n", type="n", bty="n")
+mtext("Temperature", 1, line = -1.5, font = 2, col = 1, cex = 1.4)
+#=-----
+par(cex=1.4, mar=c(1,4,3,1))
+plot.template(xlim = c(0,50), ylim = c(0,0.15), xlab = "", ylab = "Exposure", xticks = c(6,11), yticks = c(6,11), col.bg = NA, col.grid = NA, plot.axis=FALSE)
+axis(1, pos=0, at = seq(0,50,le=6), labels = temp.range, cex.axis=.9)
+axis(2, pos = 0, at = seq(0,0.15,0.05), labels = seq(0,0.15,0.05))
+lines(c(NA,deltaN.all)~gradient, col = 1, type = "l", lwd = 1.5)
+points(Hmax-1, deltaN.all[which.max(newEq.all[,"H"])-1], pch=8)
+points(O2B-1, deltaN.all[which(dominance=="B") [1] -1 ], pch=19)
+points(B2T-1, deltaN.all[which(dominance=="T") [1] -1], pch=19)
+mtext("(d)", 3, font = 2, cex=1.5)
+#=-----
+par(cex=1.4, mar=c(1,4,3,1))
+plot.template(xlim = c(0,50), ylim = c(0,8000), xlab = "", ylab = "Sensitivity", xticks = c(6,11), yticks = c(6,11), col.bg = NA, col.grid = NA, plot.axis=FALSE)
+axis(1, pos=0, at = seq(0,50,le=6), labels =temp.range, cex.axis=.9)
+axis(2, pos = 0, at = seq(0,8000,2000), labels = seq(0,8000,2000))
+lines(c(NA,deltaT.all)~gradient, col = 1, type = "l", lwd = 1.5)
+points(Hmax-1, deltaT.all[which.max(newEq.all[,"H"])-1], pch=8)
+points(O2B-1, deltaT.all[which(dominance=="B") [1] -1], pch=19)
+points(B2T-1, deltaT.all[which(dominance=="T") [1] -1], pch=19)
+mtext("(e)", 3, font = 2, cex=1.5)
+#=-----
+par(cex=1.4, mar=c(1,4,3,1))
+plot.template(xlim = c(0,50), ylim = c(0,35), xlab = "", ylab = "Cumulative state changes", xticks = c(6,11), yticks = c(6,11), col.bg = NA, col.grid = NA, plot.axis=FALSE)
+axis(1, pos=0, at = seq(0,50,le=6), labels = temp.range, cex.axis=.9)
+axis(2, pos = 0, at = seq(0,35,5), labels = seq(0,35,5))
+lines(c(NA,integraleV.all)~gradient, col = 1, type = "l", lwd = 1.5)
+points(Hmax-1, integraleV.all[which.max(newEq.all[,"H"])-1], pch=8)
+points(O2B-1, integraleV.all[which(dominance=="B") [1] -1], pch=19)
+points(B2T-1, integraleV.all[which(dominance=="T") [1] -1], pch=19)
+mtext("(f)", 3, font = 2, cex=1.5)
+#=-----
+par(cex=1.4, mar=c(1,4,1,1))
+plot(1:10,1:10, ylab="", xlab="", xaxt="n", yaxt="n", type="n", bty="n")
+mtext("Temperature \n(final temperature)", 1, line = -1, font = 2, col = 1, cex = 1.4)
+```
+
+

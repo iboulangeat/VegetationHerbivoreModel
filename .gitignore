@@ -1,0 +1,10 @@
+_*/
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+*.vrb
+*.RData
+illustrations/
