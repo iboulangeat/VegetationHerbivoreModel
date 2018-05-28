@@ -42,12 +42,19 @@ library(cluster)
 ```r
 T0 = c(T=0.3, S=0.3, B = 0.3, H=5*375)
 out = solveEq(func = model, init =T0, parms = init.params, maxsteps = 10000)
+```
+
+```
+## Error in eval(substitute(expr), data, enclos = parent.frame()): objet 'R' introuvable
+```
+
+```r
 (eq = out$eq)
 ```
 
 ```
 ##            T            S            B            H 
-##    0.3250468    0.2510789    0.3977062 2617.3140121
+##    0.3284338    0.2533228    0.4013544 2779.4831384
 ```
 #  Equilibrium along environmental gradient
 
@@ -56,6 +63,13 @@ out = solveEq(func = model, init =T0, parms = init.params, maxsteps = 10000)
 
 ```r
 calcEq.veg = data.frame(t(eqveg.fct.Vect(1:grad.div, init.params, par.name, par.clim)))
+```
+
+```
+## Error in if (min(equi.veg > 0)) {: l'argument n'est pas interprétable comme une valeur logique
+```
+
+```r
 newEq.veg = data.frame(matrix(unlist(calcEq.veg[[1]]), ncol = 4, byrow = T))
 colnames(newEq.veg) = c("T", "S", "B", "H")
 newEq.veg[,"G"] = 1 - newEq.veg[,"S"] - newEq.veg[,"B"] - newEq.veg[,"T"]
@@ -71,6 +85,13 @@ newEq.veg.For = newEq.veg[,"T"] + newEq.veg[,"B"]
 
 ```r
 calcEq.all = data.frame(t(eqall.fct.Vect(1:grad.div, init.params, par.name, par.clim, model)))
+```
+
+```
+## Error in eval(substitute(expr), data, enclos = parent.frame()): objet 'R' introuvable
+```
+
+```r
 newEq.all = data.frame(matrix(unlist(calcEq.all[[1]]), ncol = 4, byrow = T))
 colnames(newEq.all) = c("T", "S", "B", "H")
 newEq.all[,"G"] = 1 - newEq.all[,"S"] - newEq.all[,"B"] - newEq.all[,"T"]
@@ -129,10 +150,24 @@ deltaN.veg[g] = as.matrix(dd.veg2)[g,g+1]
 simu.time = 10000 # max time of simu before reach eq
 
 calcTime.all = calcTime.Vect(1:50, newEq.all, simu.time=10000, woH=FALSE,init.params=init.params, model)
+```
+
+```
+## Error in eval(substitute(expr), data, enclos = parent.frame()): objet 'R' introuvable
+```
+
+```r
 deltaT.all = unlist(calcTime.all[1,])
 integraleV.all = unlist(calcTime.all[2,]) 
 
 calcTime.veg = calcTime.Vect(1:50, newEq.veg, simu.time=10000, woH=TRUE, init.params=init.params, model)
+```
+
+```
+## Error in eval(substitute(expr), data, enclos = parent.frame()): objet 'R' introuvable
+```
+
+```r
 deltaT.veg = unlist(calcTime.veg[1,])
 integraleV.veg = unlist(calcTime.veg[2,]) 
 ```
@@ -151,7 +186,7 @@ integraleV.veg = unlist(calcTime.veg[2,])
 ```
 
 ```
-## [1] -1.0000000 -0.9789676
+## [1] -1.0000000 -0.9797359
 ```
 
 ```r
@@ -179,11 +214,11 @@ cor.test(-lambdamax.all[-1], deltaT.all,  method="spearman")
 ## 	Spearman's rank correlation rho
 ## 
 ## data:  -lambdamax.all[-1] and deltaT.all
-## S = 41212, p-value < 2.2e-16
+## S = 41228, p-value < 2.2e-16
 ## alternative hypothesis: true rho is not equal to 0
 ## sample estimates:
 ##        rho 
-## -0.9789676
+## -0.9797359
 ```
 
 ```r
@@ -191,7 +226,7 @@ cor.test(-lambdamax.all[-1], deltaT.all,  method="spearman")
 ```
 
 ```
-## [1] -0.5303721 -0.2250660
+## [1] -0.5303721 -0.2478271
 ```
 
 ```r
@@ -219,11 +254,11 @@ cor.test(-lambdamax.all[-1], -reac.all[-1], method="spearman")
 ## 	Spearman's rank correlation rho
 ## 
 ## data:  -lambdamax.all[-1] and -reac.all[-1]
-## S = 25512, p-value = 0.116
+## S = 25986, p-value = 0.08282
 ## alternative hypothesis: true rho is not equal to 0
 ## sample estimates:
-##       rho 
-## -0.225066
+##        rho 
+## -0.2478271
 ```
 
 ```r
@@ -231,7 +266,7 @@ cor.test(-lambdamax.all[-1], -reac.all[-1], method="spearman")
 ```
 
 ```
-## [1] 0.8097479 0.7170708
+## [1] 0.8097479 0.7664346
 ```
 
 ```r
@@ -259,11 +294,11 @@ cor.test(deltaN.all, integraleV.all, method="spearman")
 ## 	Spearman's rank correlation rho
 ## 
 ## data:  deltaN.all and integraleV.all
-## S = 5892, p-value = 2.538e-08
+## S = 4864, p-value < 2.2e-16
 ## alternative hypothesis: true rho is not equal to 0
 ## sample estimates:
 ##       rho 
-## 0.7170708
+## 0.7664346
 ```
 
 ```r
@@ -271,7 +306,7 @@ cor.test(deltaN.all, integraleV.all, method="spearman")
 ```
 
 ```
-## [1] 0.7510684 0.6601200
+## [1] 0.7510684 0.6228571
 ```
 
 ```r
@@ -299,11 +334,11 @@ cor.test(deltaT.all, integraleV.all, method="spearman")
 ## 	Spearman's rank correlation rho
 ## 
 ## data:  deltaT.all and integraleV.all
-## S = 7078, p-value = 4.428e-07
+## S = 7854, p-value = 2.42e-06
 ## alternative hypothesis: true rho is not equal to 0
 ## sample estimates:
-##     rho 
-## 0.66012
+##       rho 
+## 0.6228571
 ```
 
 ```r
@@ -311,7 +346,7 @@ cor.test(deltaT.all, integraleV.all, method="spearman")
 ```
 
 ```
-## [1] 0.53037215 0.09618247
+## [1] 0.5303721 0.1242257
 ```
 
 ```r
@@ -339,11 +374,11 @@ cor.test(-reac.all[-1], deltaT.all, method="spearman") # NS
 ## 	Spearman's rank correlation rho
 ## 
 ## data:  -reac.all[-1] and deltaT.all
-## S = 18822, p-value = 0.5053
+## S = 18238, p-value = 0.3889
 ## alternative hypothesis: true rho is not equal to 0
 ## sample estimates:
-##        rho 
-## 0.09618247
+##       rho 
+## 0.1242257
 ```
 
 ```r
@@ -351,7 +386,7 @@ cor.test(-reac.all[-1], deltaT.all, method="spearman") # NS
 ```
 
 ```
-## [1] -0.7510684 -0.5855942
+## [1] -0.7510684 -0.5486194
 ```
 
 ```r
@@ -379,11 +414,11 @@ cor.test(-lambdamax.all[-1], integraleV.all, method="spearman")
 ## 	Spearman's rank correlation rho
 ## 
 ## data:  -lambdamax.all[-1] and integraleV.all
-## S = 33020, p-value = 1.185e-05
+## S = 32250, p-value = 4.958e-05
 ## alternative hypothesis: true rho is not equal to 0
 ## sample estimates:
 ##        rho 
-## -0.5855942
+## -0.5486194
 ```
 
 ```r
@@ -391,7 +426,7 @@ cor.test(-lambdamax.all[-1], integraleV.all, method="spearman")
 ```
 
 ```
-## [1]  0.1469868 -0.2303481
+## [1]  0.1469868 -0.2352461
 ```
 
 ```r
@@ -419,11 +454,11 @@ cor.test(-reac.all[-1], integraleV.all, method="spearman") # NS
 ## 	Spearman's rank correlation rho
 ## 
 ## data:  -reac.all[-1] and integraleV.all
-## S = 25622, p-value = 0.1075
+## S = 25724, p-value = 0.1001
 ## alternative hypothesis: true rho is not equal to 0
 ## sample estimates:
 ##        rho 
-## -0.2303481
+## -0.2352461
 ```
 
 ```r
@@ -431,7 +466,7 @@ cor.test(-reac.all[-1], integraleV.all, method="spearman") # NS
 ```
 
 ```
-## [1] 0.7050660 0.3544298
+## [1] 0.7050660 0.2893157
 ```
 
 ```r
@@ -459,11 +494,11 @@ cor.test(deltaN.all, deltaT.all, method="spearman")
 ## 	Spearman's rank correlation rho
 ## 
 ## data:  deltaN.all and deltaT.all
-## S = 13444, p-value = 0.01195
+## S = 14800, p-value = 0.04194
 ## alternative hypothesis: true rho is not equal to 0
 ## sample estimates:
 ##       rho 
-## 0.3544298
+## 0.2893157
 ```
 
 ```r
@@ -471,7 +506,7 @@ cor.test(deltaN.all, deltaT.all, method="spearman")
 ```
 
 ```
-## [1] -0.705066 -0.332533
+## [1] -0.7050660 -0.2513806
 ```
 
 ```r
@@ -499,11 +534,11 @@ cor.test(deltaN.all, -lambdamax.all[-1], method="spearman")
 ## 	Spearman's rank correlation rho
 ## 
 ## data:  deltaN.all and -lambdamax.all[-1]
-## S = 27750, p-value = 0.01872
+## S = 26060, p-value = 0.0784
 ## alternative hypothesis: true rho is not equal to 0
 ## sample estimates:
-##       rho 
-## -0.332533
+##        rho 
+## -0.2513806
 ```
 
 ```r
@@ -511,7 +546,7 @@ cor.test(deltaN.all, -lambdamax.all[-1], method="spearman")
 ```
 
 ```
-## [1]  0.01954382 -0.01829532
+## [1]  0.01954382 -0.12220888
 ```
 
 ```r
@@ -539,11 +574,11 @@ cor.test(deltaN.all, -reac.all[-1], method="spearman") # NS
 ## 	Spearman's rank correlation rho
 ## 
 ## data:  deltaN.all and -reac.all[-1]
-## S = 21206, p-value = 0.8995
+## S = 23370, p-value = 0.3967
 ## alternative hypothesis: true rho is not equal to 0
 ## sample estimates:
-##         rho 
-## -0.01829532
+##        rho 
+## -0.1222089
 ```
 
 ## Correlations : figure
@@ -557,9 +592,34 @@ cor.test(deltaN.all, -reac.all[-1], method="spearman") # NS
 
 ```r
 simu1 = simulation(newEq.all, grad.start=15, grad.pars=15+1, 10000, woH=FALSE, init.params =init.params, model)
+```
+
+```
+## Error in eval(substitute(expr), data, enclos = parent.frame()): objet 'R' introuvable
+```
+
+```r
 simu1.veg = simulation(newEq.veg, grad.start=15, grad.pars=15+1, 10000, woH=TRUE, init.params =init.params, model)
+```
+
+```
+## Error in eval(substitute(expr), data, enclos = parent.frame()): objet 'R' introuvable
+```
+
+```r
 simu2 = simulation(newEq.all, grad.start=35, grad.pars=35+1, 10000, woH=FALSE, init.params =init.params, model)
+```
+
+```
+## Error in eval(substitute(expr), data, enclos = parent.frame()): objet 'R' introuvable
+```
+
+```r
 simu2.veg = simulation(newEq.veg, grad.start=35, grad.pars=35+1, 10000, woH=TRUE, init.params =init.params, model)
+```
+
+```
+## Error in eval(substitute(expr), data, enclos = parent.frame()): objet 'R' introuvable
 ```
 
 ## Trajectories' examples figure
@@ -575,6 +635,13 @@ simu2.veg = simulation(newEq.veg, grad.start=35, grad.pars=35+1, 10000, woH=TRUE
 T0 = c(T=0.3, S=0.3, B = 0.3, H=5*375)
 require(rootSolve)
 out = solveEq(func = modelG, init =T0, parms = init.params, maxsteps = 10000)
+```
+
+```
+## Error in eval(substitute(expr), data, enclos = parent.frame()): objet 'R' introuvable
+```
+
+```r
 (eq = out$eq)
 ```
 
@@ -588,6 +655,13 @@ out = solveEq(func = modelG, init =T0, parms = init.params, maxsteps = 10000)
 
 ```r
 calcEq.all = data.frame(t(eqall.fct.Vect(1:grad.div, init.params, par.name, par.clim, modelG)))
+```
+
+```
+## Error in eval(substitute(expr), data, enclos = parent.frame()): objet 'R' introuvable
+```
+
+```r
 newEq.all = data.frame(matrix(unlist(calcEq.all[[1]]), ncol = 4, byrow = T))
 colnames(newEq.all) = c("T", "S", "B", "H")
 newEq.all[,"G"] = 1 - newEq.all[,"S"] - newEq.all[,"B"] - newEq.all[,"T"]
@@ -629,6 +703,13 @@ for (g in 1:50)
 }
 simu.time = 10000 # max time of simu before reach eq
 calcTime.all = calcTime.Vect(1:50, newEq.all, simu.time=10000, woH=FALSE,init.params=init.params, model=modelG)
+```
+
+```
+## Error in eval(substitute(expr), data, enclos = parent.frame()): objet 'R' introuvable
+```
+
+```r
 deltaT.all = unlist(calcTime.all[1,])
 integraleV.all = unlist(calcTime.all[2,]) 
 ```

@@ -5,239 +5,215 @@
 model <- function(ti, states, parms)
 {
   with(as.list(c(states, parms)), {
-    
-    G=1-T-S-B 
-    
-    # preferences seedlings
+
+    V=1-T-R-B
+
+    # preferences seedlings temperate/boreal
     epsilon = 0.0001
-    wt = (T+epsilon) / (B+T+2*epsilon)
-    wb = (B+epsilon) / (B+T+2*epsilon)
-    qt = omega*wt / (omega*wt + (1-omega)*wb)
-    qb = (1-omega)*wb / (omega*wt + (1-omega)*wb)
-    # preferences mature/seedlings
-    summer.ws = (uS*S)*l / ((uS*S+uT*T)*l +uB*B*lB)
-    winter.ws = (uS*S*(1-l)) / ((uS*S + uT*T)*(1-l) + uB*B*(1-lB))
-    phis = omega2*summer.ws / (omega2*summer.ws+(1-omega2)*(1-summer.ws))
-    phiw = omega2*winter.ws / (omega2*winter.ws+(1-omega2)*(1-winter.ws))
-    
-    if(H>1e-5) 
+    omega = (T+epsilon) / (B+T+2*epsilon)
+    q = p*omega / (p*omega + (1-omega)*(1-p))
+
+    # preferences seedlings/mature
+    phis_0 = (uR*R)*f / ((uR*R+uT*T)*f +uB*B*fB)
+    phiw_0 = (uR*R*(1-f)) / ((uR*R + uT*T)*(1-f) + uB*B*(1-fB))
+    phis = pR*phis_0 / (pR*phis_0+(1-pR)*(1-phis_0))
+    phiw = pR*phiw_0 / (pR*phiw_0+(1-pR)*(1-phiw_0))
+
+    if(H>1e-5) # population cannot recover if no reproduction is possible
     {
-      Fs = (uS*S + uT*T)*l + uB*B*lB
-      Fw = (uS*S + uT*T)*(1-l) + uB*B*(1-lB)
-      
+      Fs = (uR*R + uT*T)*f + uB*B*fB
+      Fw = (uR*R + uT*T)*(1-f) + uB*B*(1-fB)
+
       # intakes rates
-      nus = nu*gseason/365
-      Is = (taus*gseason*Fs/H) / (nus + Fs/H)
-      
-      if(Is>(Fs/H)) Is = Fs/H
-      
-      #reproduction limitation
-      gains_s = min(gmax, es* Is )
-      
-      nuw = nu*(1-gseason/365)
-      Iw = (tauw*(365-gseason)*Fw/H) / (nuw + Fw/H)
-      
-      if(Iw>(Fw/H)) Iw = Fw/H
-      
-      gains_w = ew* Iw 
-      gains = gains_s * H + gains_w * H
-      
-      Us = Is *H
-      Uw = Iw *H
+      irate_s = (taus*Fs/H) / (nus + Fs/H)
+      if(irate_s>(Fs/H)) irate_s = Fs/H # maximum consumption
+
+      irate_w = (tauw*Fw/H) / (nuw + Fw/H)
+      if(irate_w>(Fw/H)) irate_w = Fw/H
+
+      # summer gain, reproduction limitation
+      Gs = H* min(gamma, es* irate_s )
+
+      # winter gain
+      Gw = H* ew* irate_w
+
       # impacts
-      if(S>0)
+      if(R>0)
       {
-        # S intake
-        UsS = Us * phis 
-        UwS = Uw * phiw 
-        
-        if(k==0) PT=0 else PT = (UsS+UwS)*qt/(uS*S*wt) 
-        if(k==1) PB=0 else PB = (UsS+UwS)*qb/(uS*S*wb)
-        PS = (UsS+UwS)/(uS*S)
-        
-        aHT = a0/(1+exp(r*(PT-ptresh)))
-        aHB = a0/(1+exp(r*(PB-ptresh)))
-        cH = c0/(1+exp(r*(PS-ptresh))) 
-        
+        # R intake
+        Us = phis * Gs/es
+        Uw = phiw * Gw/ew
+
+        PR = (Us+Uw)/(uR*R)
+        if(k==0) PT=0 else PT = PR*q/omega
+        if(k==1) PB=0 else PB = PR*(1-q)/(1-omega)
+
+
+        aHT = aT/(1+exp(r*(PT-hT)))
+        aHB = aB/(1+exp(r*(PB-hB)))
+        cH = c0/(1+exp(r*(PR-hR)))
+
       }else {
-        aHT = a0
-        aHB = a0
+        aHT = aT
+        aHB = aB
         cH = c0
       }
-      
+
     }else {
       aHT = a0
       aHB = a0
       cH = c0
-      Is = Iw = 0
-      gains = 0
-      
-    }        
-    
+      Gs = Gw = 0
+    }
+
     # vegetation model
-    dT= aHT*S*k - dT*T
-    dB= aHB*S*(1-k) -dB*B 
-    dS= (T+B)*cH*G - (aHT*k + aHB*(1-k))*S
-    
-    #herbivore model  
-    
-    dH =  gains - mp * H
-    
-    
-    return(list(c(dT, dS, dB, dH)))
+    dT= aHT*R*k - dT*T
+    dB= aHB*R*(1-k) -dB*B
+    dR= (T+B)*cH*V - (aHT*k + aHB*(1-k))*R
+
+    #herbivore model
+
+    dH =  Gs + Gw - m * H
+
+
+    return(list(c(dT, dR, dB, dH)))
   })
 }
 
 #_________________________________________________________________
-# model vegetation with fixed herbivore 
+# model vegetation with fixed herbivore
 #------------------------------------------
 modelH1 <- function(ti, states, parms)
 {
   with(as.list(c(states, parms)), {
-    
-    G=1-T-S-B 
-    
-    # preferences seedlings
+
+    V=1-T-R-B
+
+    # preferences seedlings temperate/boreal
     epsilon = 0.0001
-    wt = (T+epsilon) / (B+T+2*epsilon)
-    wb = (B+epsilon) / (B+T+2*epsilon)
-    qt = omega*wt / (omega*wt + (1-omega)*wb)
-    qb = (1-omega)*wb / (omega*wt + (1-omega)*wb)
-    # preferences mature/seedlings
-    summer.ws = (uS*S)*l / ((uS*S+uT*T)*l +uB*B*lB)
-    winter.ws = (uS*S*(1-l)) / ((uS*S + uT*T)*(1-l) + uB*B*(1-lB))
-    phis = omega2*summer.ws / (omega2*summer.ws+(1-omega2)*(1-summer.ws))
-    phiw = omega2*winter.ws / (omega2*winter.ws+(1-omega2)*(1-winter.ws))
-    
-    if(H>1e-5) 
+    omega = (T+epsilon) / (B+T+2*epsilon)
+    q = p*omega / (p*omega + (1-omega)*(1-p))
+
+    # preferences seedlings/mature
+    phis_0 = (uR*R)*f / ((uR*R+uT*T)*f +uB*B*fB)
+    phiw_0 = (uR*R*(1-f)) / ((uR*R + uT*T)*(1-f) + uB*B*(1-fB))
+    phis = pR*phis_0 / (pR*phis_0+(1-pR)*(1-phis_0))
+    phiw = pR*phiw_0 / (pR*phiw_0+(1-pR)*(1-phiw_0))
+
+    if(H>1e-5) # population cannot recover if no reproduction is possible
     {
-      Fs = (uS*S + uT*T)*l + uB*B*lB
-      Fw = (uS*S + uT*T)*(1-l) + uB*B*(1-lB)
-      
+      Fs = (uR*R + uT*T)*f + uB*B*fB
+      Fw = (uR*R + uT*T)*(1-f) + uB*B*(1-fB)
+
       # intakes rates
-      nus = nu*gseason/365
-      Is = (taus*gseason*Fs/H) / (nus + Fs/H)
-      
-      if(Is>(Fs/H)) Is = Fs/H
-      
-      #reproduction limitation
-      gains_s = min(gmax, es* Is )
-      
-      
-      nuw = nu*(1-gseason/365)
-      Iw = (tauw*(365-gseason)*Fw/H) / (nuw + Fw/H)
-      
-      if(Iw>(Fw/H)) Iw = Fw/H
-      
-      gains_w = ew* Iw 
-      gains = gains_s * H + gains_w * H
-      
-      Us = Is *H
-      Uw = Iw *H
+      irate_s = (taus*Fs/H) / (nus + Fs/H)
+      if(irate_s>(Fs/H)) irate_s = Fs/H
+
+      irate_w = (tauw*Fw/H) / (nuw + Fw/H)
+      if(irate_w>(Fw/H)) irate_w = Fw/H
+
+      # summer gain, reproduction limitation
+      Gs = H* min(gamma, es* irate_s )
+
+      # winter gain
+      Gw = H* ew* irate_w
+
       # impacts
-      if(S>0)
+      if(R>0)
       {
-        # S intake
-        UsS = Us * phis 
-        UwS = Uw * phiw 
-        
-        if(k==0) PT=0 else PT = (UsS+UwS)*qt/(uS*S*wt) 
-        if(k==1) PB=0 else PB = (UsS+UwS)*qb/(uS*S*wb)
-        PS = (UsS+UwS)/(uS*S)
-        
-        aHT = a0/(1+exp(r*(PT-ptresh)))
-        aHB = a0/(1+exp(r*(PB-ptresh)))
-        cH = c0/(1+exp(r*(PS-ptresh))) 
-        
+        # R intake
+        Us = phis * Gs/es
+        Uw = phiw * Gw/ew
+
+        PR = (Us+Uw)/(uR*R)
+        if(k==0) PT=0 else PT = PR*q/omega
+        if(k==1) PB=0 else PB = PR*(1-q)/(1-omega)
+
+
+        aHT = aT/(1+exp(r*(PT-hT)))
+        aHB = aB/(1+exp(r*(PB-hB)))
+        cH = c0/(1+exp(r*(PR-hR)))
+
       }else {
-        aHT = a0
-        aHB = a0
+        aHT = aT
+        aHB = aB
         cH = c0
       }
-      
+
     }else {
       aHT = a0
       aHB = a0
       cH = c0
-      Is = Iw = 0
-    }          
-    
+      Gs = Gw = 0
+    }
+
     # vegetation model
-    dT= aHT*S*k - dT*T
-    dB= aHB*S*(1-k) -dB*B 
-    dS= (T+B)*cH*G - (aHT*k + aHB*(1-k))*S 
-    
-    return(list(c(dT, dS, dB)))
+    dT= aHT*R*k - dT*T
+    dB= aHB*R*(1-k) -dB*B
+    dR= (T+B)*cH*V - (aHT*k + aHB*(1-k))*R
+
+    return(list(c(dT, dR, dB)))
   })
 }
 
 
 #___________________________________________________________________
-# model herbivore with fixed vegetation 
+# model herbivore with fixed vegetation
 #------------------------------------------
 
 modelH <- function(ti, states, parms)
 {
   with(as.list(c(states, parms)), {
-    
-    G=1-T-S-B 
-    
-    if(H>1e-5) 
+
+    V=1-T-R-B
+
+    if(H>1e-5)
     {
-      
-      Fs = (uS*S + uT*T)*l + uB*B*lB
-      Fw = (uS*S + uT*T)*(1-l) + uB*B*(1-lB)
-      
+
+      Fs = (uR*R + uT*T)*f + uB*B*fB
+      Fw = (uR*R + uT*T)*(1-f) + uB*B*(1-fB)
+
       # intakes rates
-      nus = nu*gseason/365
-      Is = (taus*gseason*Fs/H) / (nus + Fs/H)
-      
-      if(Is>(Fs/H)) Is = Fs/H
-      
-      #reproduction limitation
-      gains_s = min(gmax, es* Is )
-      
-      nuw = nu*(1-gseason/365)
-      Iw = (tauw*(365-gseason)*Fw/H) / (nuw + Fw/H)
-      
-      
-      if(Iw>(Fw/H)) Iw = Fw/H
-      
-      
-      gains_w = ew* Iw 
-      gains = gains_s * H + gains_w * H
-      
-      
+      irate_s = (taus*Fs/H) / (nus + Fs/H)
+      if(irate_s>(Fs/H)) irate_s = Fs/H
+
+      irate_w = (tauw*Fw/H) / (nuw + Fw/H)
+      if(irate_w>(Fw/H)) irate_w = Fw/H
+
+      # summer gain, reproduction limitation
+      Gs = H* min(gamma, es* irate_s )
+
+      # winter gain
+      Gw = H* ew* irate_w
+
+
     }else {
-      gains = 0
-    }        
-    
-    
-    #herbivore model  
-    
-    dH =  gains - mp * H
-    
-    
-    
+      Gs = Gw = 0
+    }
+
+    #herbivore model
+
+    dH =  Gs + Gw - m * H
+
     return(list(c(dH)))
   })
 }
 
 #______________________________________________________________________
-# model vegettion only 
+# model vegettion only
 #------------------------------------------
 modelV <- function(ti, states, parms)
 {
   with(as.list(c(states, parms)), {
-    
-    G=1-T-S-B 
-    
+
+    V=1-T-R-B
+
     # vegetation model
-    dT= a0*S*k - dT*T
-    dB= a0*S*(1-k) -dB*B 
-    dS= (T+B)*c0*G - (a0*k + a0*(1-k))*S
-    
-    return(list(c(dT, dS, dB)))
+    dT= aHT*R*k - dT*T
+    dB= aHB*R*(1-k) -dB*B
+    dR= (T+B)*cH*V - (aHT*k + aHB*(1-k))*R
+
+    return(list(c(dT, dR, dB)))
   })
 }
 
@@ -247,91 +223,83 @@ modelV <- function(ti, states, parms)
 modelG <- function(ti, states, parms)
 {
   with(as.list(c(states, parms)), {
-    
-    G=1-T-S-B 
-    
-    # preferences seedlings T vs B
-    epsilon = 0.0001
-    wt = (T+epsilon) / (B+T+2*epsilon)
-    wb = (B+epsilon) / (B+T+2*epsilon)
-    qt = omega*wt / (omega*wt + (1-omega)*wb)
-    qb = (1-omega)*wb / (omega*wt + (1-omega)*wb)
-    # preferences mature/seedlings
-    summer.ws = (uS*S)*l / ((uS*S+uT*T)*l +uB*B*lB)
-    winter.ws = (uS*S*(1-l)) / ((uS*S + uT*T)*(1-l) + uB*B*(1-lB))
-    phis = omega2*summer.ws / (omega2*summer.ws+(1-omega2)*(1-summer.ws))
-    phiw = omega2*winter.ws / (omega2*winter.ws+(1-omega2)*(1-winter.ws))
 
-    
-    if(H>1e-5) 
+    V=1-T-R-B
+
+    # preferences seedlings temperate/boreal
+    epsilon = 0.0001
+    omega = (T+epsilon) / (B+T+2*epsilon)
+    q = p*omega / (p*omega + (1-omega)*(1-p))
+
+    # preferences seedlings/mature
+    phis_0 = (uR*R)*f / ((uR*R+uT*T)*f +uB*B*fB)
+    phiw_0 = (uR*R*(1-f)) / ((uR*R + uT*T)*(1-f) + uB*B*(1-fB))
+    phis = pR*phis_0 / (pR*phis_0+(1-pR)*(1-phis_0))
+    phiw = pR*phiw_0 / (pR*phiw_0+(1-pR)*(1-phiw_0))
+
+    if(H>1e-5)
     {
-      Fs = (uS*S + uT*T)*l + uB*B*lB 
-      FsG = min(uG*G, pGraz*Fs)
-      Fw = (uS*S + uT*T)*(1-l) + uB*B*(1-lB)
-      
+      Fs = (uR*R + uT*T)*f + uB*B*fB
+      FsG = min(uG*V, pG*Fs)
+      Fs = Fs + FsG
+      Fw = (uR*R + uT*T)*(1-f) + uB*B*(1-fB)
+
       # intakes rates
-      nus = nu*gseason/365
-      Is = (taus*gseason*(Fs+FsG)/H) / (nus + (Fs+FsG)/H)
-      
-      
-      if(Is>(Fs/H)) Is = Fs/H
-      # if(IsG>(FsG/H)) IsG = FsG/H
-      
-      #reproduction limitation
-      gains_s = min(gmax, es*Is)
-      
-      nuw = nu*(1-gseason/365)
-      Iw = (tauw*(365-gseason)*Fw/H) / (nuw + Fw/H)
-      
-      if(Iw>(Fw/H)) Iw = Fw/H
-      
-      gains_w = ew* Iw 
-      gains = gains_s * H + gains_w * H
-      
+      irate_s = (taus*(Fs+FsG)/H) / (nus + (Fs+FsG)/H)
+      if(irate_s>((Fs+FsG)/H)) irate_s = (Fs+FsG)/H
+
+      irate_w = (tauw*Fw/H) / (nuw + Fw/H)
+      if(irate_w>(Fw/H)) irate_w = Fw/H
+
+      # summer gain, reproduction limitation
+      Gs = H* min(gamma, es* irate_s )
+
+      # winter gain
+      Gw = H* ew* irate_w
+
       Us = Is *H # total summer ressource used
       UsG = (FsG*Us)/(Fs+FsG) # grazed ressource
       Uw = Iw *H
       # impacts
-      if(S>0)
+      if(R>0)
       {
-        # S intake
-        UsS = (Us-UsG) * phis 
-        UwS = Uw * phiw
-        # G intake : UsG
-        
-        if(k==0) PT=0 else PT = (UsS+UwS)*qt/(uS*S*wt) 
-        if(k==1) PB=0 else PB = (UsS+UwS)*qb/(uS*S*wb)
-        PS = (UsS+UwS)/(uS*S) - UsG/(uG*G)
-        
-        aHT = a0/(1+exp(r*(PT-ptresh)))
-        aHB = a0/(1+exp(r*(PB-ptresh)))
-        cH = c0/(1+exp(r*(PS-ptresh))) 
-        
+        # R intake
+        Is = Gs/es
+        Us = phis * Is * (1 - FsG/Fs)
+        Uw = phiw * Gw/ew
+
+        PR = (Us+Uw)/(uR*R) - (FsG*Is)/(Fs*uG*V)
+        if(k==0) PT=0 else PT = PR*q/omega
+        if(k==1) PB=0 else PB = PR*(1-q)/(1-omega)
+
+
+        aHT = aT/(1+exp(r*(PT-hT)))
+        aHB = aB/(1+exp(r*(PB-hB)))
+        cH = c0/(1+exp(r*(PR-hR)))
+
       }else {
-        aHT = a0
-        aHB = a0
+        aHT = aT
+        aHB = aB
         cH = c0
       }
-      
+
     }else {
       aHT = a0
       aHB = a0
       cH = c0
-      Is = Iw = 0
-      gains = 0
-      
-    }        
-    
+      Gs = Gw = 0
+    }
+
     # vegetation model
-    dT= aHT*S*k - dT*T
-    dB= aHB*S*(1-k) -dB*B 
-    dS= (T+B)*cH*G - (aHT*k + aHB*(1-k))*S
-    
-    #herbivore model  
-    
-    dH =  gains - mp * H
-    
-    
+    dT= aHT*R*k - dT*T
+    dB= aHB*R*(1-k) -dB*B
+    dR= (T+B)*cH*V - (aHT*k + aHB*(1-k))*R
+
+    #herbivore model
+
+    dH =  Gs + Gw - m * H
+
+
     return(list(c(dT, dS, dB, dH)))
   })
 }
