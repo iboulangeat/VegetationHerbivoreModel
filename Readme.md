@@ -580,7 +580,7 @@ out = solveEq(func = modelG, init =T0, parms = init.params, maxsteps = 10000)
 
 ```
 ##            T            S            B            H 
-##    0.3084180    0.2637219    0.4110798 2990.6327832
+##    0.3284338    0.2533228    0.4013544 2779.4831384
 ```
 
 ## Equilibrium along the gradient

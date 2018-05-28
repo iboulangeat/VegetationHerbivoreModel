@@ -261,25 +261,24 @@ modelG <- function(ti, states, parms)
     winter.ws = (uS*S*(1-l)) / ((uS*S + uT*T)*(1-l) + uB*B*(1-lB))
     phis = omega2*summer.ws / (omega2*summer.ws+(1-omega2)*(1-summer.ws))
     phiw = omega2*winter.ws / (omega2*winter.ws+(1-omega2)*(1-winter.ws))
-    
+
     
     if(H>1e-5) 
     {
-      FsG = min(uG*G, pGraz*((uS*S + uT*T)*l + uB*B*lB))
-      Fs = (uS*S + uT*T)*l + uB*B*lB + FsG
+      Fs = (uS*S + uT*T)*l + uB*B*lB 
+      FsG = min(uG*G, pGraz*Fs)
       Fw = (uS*S + uT*T)*(1-l) + uB*B*(1-lB)
       
       # intakes rates
       nus = nu*gseason/365
-      Is = (taus*gseason*Fs/H) / (nus + Fs/H)
-      IsG = (taus*gseason*FsG/H) / (nus + FsG/H)
+      Is = (taus*gseason*(Fs+FsG)/H) / (nus + (Fs+FsG)/H)
       
       
       if(Is>(Fs/H)) Is = Fs/H
-      if(IsG>(FsG/H)) IsG = FsG/H
+      # if(IsG>(FsG/H)) IsG = FsG/H
       
       #reproduction limitation
-      gains_s = min(gmax, es* (Is+IsG) )
+      gains_s = min(gmax, es*Is)
       
       nuw = nu*(1-gseason/365)
       Iw = (tauw*(365-gseason)*Fw/H) / (nuw + Fw/H)
@@ -289,14 +288,14 @@ modelG <- function(ti, states, parms)
       gains_w = ew* Iw 
       gains = gains_s * H + gains_w * H
       
-      Us = Is *H
-      UsG = IsG *H
+      Us = Is *H # total summer ressource used
+      UsG = (FsG*Us)/(Fs+FsG) # grazed ressource
       Uw = Iw *H
       # impacts
       if(S>0)
       {
         # S intake
-        UsS = Us * phis 
+        UsS = (Us-UsG) * phis 
         UwS = Uw * phiw
         # G intake : UsG
         
