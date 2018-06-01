@@ -13,13 +13,12 @@ output:
 
 <!-- library(rmarkdown) -->
 <!-- library(knitr) -->
-<!-- knit("MainAnalysis.Rmd", "Readme.md") -->
+<!-- knit("preference_pR.Rmd", "preference_pR.md") -->
 
 # Set up
 
-## Load parameters and model
+## Load model and parameters
 
-Also load plot functions
 ```{r}
 rm(list=ls())
 source("params.r")
@@ -35,17 +34,17 @@ library(rootSolve)
 library(cluster)
 ```
 
-## Test model
+# Change preference parameter
 
 ```{r}
-T0 = c(T=0.3, R=0.3, B = 0.3, H=5*375)
-out = solveEq(func = model, init =T0, parms = init.params, maxsteps = 10000)
-(eq = out$eq)
+init.params["pR"] = 0.8
 ```
-#  Equilibrium along environmental gradient
 
-## Vegetation alone
+# Analysis
 
+## Equilibrium along the gradient
+
+### Vegetation alone
 ```{r, results='hide'}
 calcEq.veg = data.frame(t(eqveg.fct.Vect(1:grad.div, init.params, par.name, par.clim)))
 newEq.veg = data.frame(matrix(unlist(calcEq.veg[[1]]), ncol = 4, byrow = T))
@@ -58,8 +57,7 @@ newEq.veg.h0[,"H"] = 0
 newEq.veg.For = newEq.veg[,"T"] + newEq.veg[,"B"]
 ```
 
-## Vegetation and herbivores
-
+### Vegetation and hrebivores
 ```{r}
 calcEq.all = data.frame(t(eqall.fct.Vect(1:grad.div, init.params, par.name, par.clim, model)))
 newEq.all = data.frame(matrix(unlist(calcEq.all[[1]]), ncol = 4, byrow = T))
@@ -72,8 +70,7 @@ reac.all = unlist(calcEq.all[[4]])
 newEq.all.For = newEq.all[,"T"] + newEq.all[,"B"]
 ```
 
-##  dominance zones
-
+### Domiance
 ```{r}
 Smax = which.max(newEq.all[,"R"])
 Bmax = which.max(newEq.all[,"B"])
@@ -88,15 +85,13 @@ O2B.veg = which(dominance.veg=="B") [1]
 B2T.veg = which(dominance.veg=="T") [1]
 ```
 
-## Equilibrium along the environmental gradient: figure
+### Equilibrium figure
 
-```{r equilibrium, fig.height=12, fig.width=5, echo=FALSE}
+```{r equilibrium_pR, fig.height=12, fig.width=12, echo=FALSE}
 plot_equilibrium()
 ```
 
-# Transition metrics
-
-##  deltaN
+## Transient metrics
 
 ```{r}
 deltaN.all = deltaN.veg =  rep(NA, 50)
@@ -108,12 +103,6 @@ for (g in 1:50)
 deltaN.all[g] = as.matrix(dd2)[g,g+1]
 deltaN.veg[g] = as.matrix(dd.veg2)[g,g+1]
 }
-```
-
-
-## Return to equilibrium after climate change
-
-```{r}
 simu.time = 10000 # max time of simu before reach eq
 
 calcTime.all = calcTime.Vect(1:50, newEq.all, simu.time=10000, woH=FALSE,init.params=init.params, model)
@@ -125,15 +114,11 @@ deltaT.veg = unlist(calcTime.veg[1,])
 integraleV.veg = unlist(calcTime.veg[2,]) 
 ```
 
-## All metrics of transient dynamics along the gradient: figure
-
-```{r transient, fig.height=15, fig.width=10, echo=FALSE}
+```{r transient_pR, fig.width=10, fig.height=15, echo=FALSE}
 plot_transient()
 ```
 
-# Correlations between metrics
-
-## Correlations and tests
+## Correlations
 
 ```{r}
 (cLDt = c(cor(-lambdamax.veg[-1], deltaT.veg, method="spearman"), cor(-lambdamax.all[-1], deltaT.all, method="spearman")) )
@@ -154,52 +139,30 @@ cor.test(deltaT.all, integraleV.all, method="spearman")
 
 (cRDt = c(cor(-reac.veg[-1], deltaT.veg, method="spearman"), cor(-reac.all[-1], deltaT.all, method="spearman")) )
 cor.test(-reac.veg[-1], deltaT.veg, method="spearman")
-cor.test(-reac.all[-1], deltaT.all, method="spearman") # NS
+cor.test(-reac.all[-1], deltaT.all, method="spearman") 
 
 (cLSn = c(cor(-lambdamax.veg[-1], integraleV.veg, method="spearman"), cor(-lambdamax.all[-1], integraleV.all, method="spearman")) )
 cor.test(-lambdamax.veg[-1], integraleV.veg, method="spearman") 
-cor.test(-lambdamax.all[-1], integraleV.all, method="spearman")
+cor.test(-lambdamax.all[-1], integraleV.all, method="spearman") 
 
 (cRSn = c(cor(-reac.veg[-1], integraleV.veg, method="spearman"), cor(-reac.all[-1], integraleV.all, method="spearman")) )
 cor.test(-reac.veg[-1], integraleV.veg, method="spearman") # NS
-cor.test(-reac.all[-1], integraleV.all, method="spearman") # NS
+cor.test(-reac.all[-1], integraleV.all, method="spearman") 
 
 (cDnDt = c(cor(deltaN.veg, deltaT.veg, method="spearman"), cor(deltaN.all, deltaT.all, method="spearman")) )
 cor.test(deltaN.veg, deltaT.veg, method="spearman") 
-cor.test(deltaN.all, deltaT.all, method="spearman") 
+cor.test(deltaN.all, deltaT.all, method="spearman") # NS
 
 (cDnL = c(cor(deltaN.veg, -lambdamax.veg[-1], method="spearman"), cor(deltaN.all, -lambdamax.all[-1], method="spearman")) )
 cor.test(deltaN.veg, -lambdamax.veg[-1], method="spearman") 
-cor.test(deltaN.all, -lambdamax.all[-1], method="spearman") 
+cor.test(deltaN.all, -lambdamax.all[-1], method="spearman") # NS
 
 (cDnR = c(cor(deltaN.veg, -reac.veg[-1], method="spearman"), cor(deltaN.all, -reac.all[-1], method="spearman")) )
 cor.test(deltaN.veg, -reac.veg[-1], method="spearman") # NS
 cor.test(deltaN.all, -reac.all[-1], method="spearman") # NS
 ```
 
-## Correlations : figure
-
-```{r correlations, fig.height=9, fig.width=15, echo=FALSE}
-plot_correlations()
+```{r correlations_pR, fig.height=9, fig.width=15}
+plot_correlations_pR()
 ```
 
-
-# Simulations of trajectories
-
-## Simulation runs
-```{r}
-simu1 = simulation(newEq.all, grad.start=15, grad.pars=15+1, 10000, woH=FALSE, init.params =init.params, model)
-simu1.veg = simulation(newEq.veg, grad.start=15, grad.pars=15+1, 10000, woH=TRUE, init.params =init.params, model)
-simu2 = simulation(newEq.all, grad.start=35, grad.pars=35+1, 10000, woH=FALSE, init.params =init.params, model)
-simu2.veg = simulation(newEq.veg, grad.start=35, grad.pars=35+1, 10000, woH=TRUE, init.params =init.params, model)
-```
-
-## Trajectories' examples figure
-
-```{r trajectories, echo=FALSE, fig.height=4, fig.width=12}
-plot_trajectories()
-```
-
-```{r, include=FALSE}
-save.image(file="MainAnalysis.RData")
-```

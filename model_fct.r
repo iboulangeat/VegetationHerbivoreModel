@@ -60,8 +60,8 @@ model <- function(ti, states, parms)
       }
 
     }else {
-      aHT = a0
-      aHB = a0
+      aHT = aT
+      aHB = aB
       cH = c0
       Gs = Gw = 0
     }
@@ -141,8 +141,8 @@ modelH1 <- function(ti, states, parms)
       }
 
     }else {
-      aHT = a0
-      aHB = a0
+      aHT = aT
+      aHB = aB
       cH = c0
       Gs = Gw = 0
     }
@@ -209,9 +209,9 @@ modelV <- function(ti, states, parms)
     V=1-T-R-B
 
     # vegetation model
-    dT= aHT*R*k - dT*T
-    dB= aHB*R*(1-k) -dB*B
-    dR= (T+B)*cH*V - (aHT*k + aHB*(1-k))*R
+    dT= aT*R*k - dT*T
+    dB= aB*R*(1-k) -dB*B
+    dR= (T+B)*c0*V - (aT*k + aB*(1-k))*R
 
     return(list(c(dT, dR, dB)))
   })
@@ -257,18 +257,14 @@ modelG <- function(ti, states, parms)
       # winter gain
       Gw = H* ew* irate_w
 
-      Us = Is *H # total summer ressource used
-      UsG = (FsG*Us)/(Fs+FsG) # grazed ressource
-      Uw = Iw *H
       # impacts
       if(R>0)
       {
         # R intake
-        Is = Gs/es
-        Us = phis * Is * (1 - FsG/Fs)
+        Us = phis * (Gs/es) * (1 - FsG/Fs)
         Uw = phiw * Gw/ew
 
-        PR = (Us+Uw)/(uR*R) - (FsG*Is)/(Fs*uG*V)
+        PR = (Us+Uw)/(uR*R)
         if(k==0) PT=0 else PT = PR*q/omega
         if(k==1) PB=0 else PB = PR*(1-q)/(1-omega)
 
@@ -284,8 +280,8 @@ modelG <- function(ti, states, parms)
       }
 
     }else {
-      aHT = a0
-      aHB = a0
+      aHT = aT
+      aHB = aB
       cH = c0
       Gs = Gw = 0
     }
@@ -300,6 +296,6 @@ modelG <- function(ti, states, parms)
     dH =  Gs + Gw - m * H
 
 
-    return(list(c(dT, dS, dB, dH)))
+    return(list(c(dT, dR, dB, dH)))
   })
 }

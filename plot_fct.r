@@ -1,5 +1,5 @@
 colo <-function(alpha = 255){
-  co = c(T = rgb(254, 127, 0, alpha, maxColorValue = 255), G= rgb(12, 12, 12, alpha, maxColorValue = 255) , S= rgb(32, 201, 69, alpha, maxColorValue = 255), H = rgb(0, 0, 0, alpha, maxColorValue = 255), B = rgb(38, 140, 248, alpha, maxColorValue = 255))
+  co = c(T = rgb(254, 127, 0, alpha, maxColorValue = 255), V= rgb(12, 12, 12, alpha, maxColorValue = 255) , R= rgb(32, 201, 69, alpha, maxColorValue = 255), H = rgb(0, 0, 0, alpha, maxColorValue = 255), B = rgb(38, 140, 248, alpha, maxColorValue = 255))
   return(co)
 }
 ##### graph  template  #######
@@ -21,7 +21,7 @@ plot.template <- function(xlim, ylim, xticks, yticks, xlab, ylab, col.grid = "wh
     axis(side = 2, pos = xlim[1], at = seq(ylim[1], ylim[2], length.out = yticks[1]), col = par()$col.axis, labels = format(seq(ylim[1], ylim[2], length.out = yticks[1])), font = 2, las = 2)
     axis(side = 2, pos = xlim[1], at = seq(ylim[1], ylim[2], length.out = yticks[2]), labels = F, lwd = 0, tck = -0.01, lwd.ticks = 1, col.ticks = par()$col.axis)
   }
-  
+
   mtext(xlab, 1, line = 1.5, font = 2, col = par()$col.axis, cex = par()$cex)
   mtext(ylab, 2, line = 1.5, font = 2, col = par()$col.axis, cex = par()$cex)
 }
@@ -29,7 +29,7 @@ plot.template <- function(xlim, ylim, xticks, yticks, xlab, ylab, col.grid = "wh
 plot.eq <- function(newEq.all, newEq.veg, O2B, B2T, ymin, ymax)
 {
   par(mfrow = c(3,1), cex = 1.2, mar = c(3,4,3,1))
-  
+
   plot.template(xlim = c(0,50), ylim = c(0,1), xticks = c(6,11), yticks = c(6,11), xlab = "increasing temperature", ylab = "Vegetation proportion", col.bg = "white", col.grid = NA, plot.axis = F)
   lines(newEq.veg[,"T"]~gradient, col = colo()["T"], type = "l", lwd = 1.5)
   lines(newEq.veg[,"B"]~gradient, col = colo()["B"], type = "l", lwd = 1.5)
@@ -40,7 +40,7 @@ plot.eq <- function(newEq.all, newEq.veg, O2B, B2T, ymin, ymax)
   mtext(at=10, side = 3, line = 0, text = "boreal",adj=0,las=1, cex=1)
   mtext(at=35, side = 3, line = 0, text = "temperate",adj=0,las=1, cex=1)
   title("(a)")
-  
+
   plot.template(xlim = c(0,50), ylim = c(0,1), xticks = c(6,11), yticks = c(6,11), xlab = "increasing temperature", ylab = "Vegetation proportion", col.bg = "white", col.grid = NA, plot.axis = F)
   lines(newEq.all[,"T"]~gradient, col = colo()["T"], type = "l", lwd = 1.5)
   lines(newEq.all[,"B"]~gradient, col = colo()["B"], type = "l", lwd = 1.5)
@@ -48,7 +48,7 @@ plot.eq <- function(newEq.all, newEq.veg, O2B, B2T, ymin, ymax)
   lines(newEq.all[,"G"]~gradient, col = colo()["G"], type = "l", lwd = 1.5)
   axis(1, pos=0, at = seq(0,50,le=6), labels = seq(-4,6,2), cex.axis=.9)
   axis(2, pos=0, at = seq(0,1,.2), labels = seq(0,1,.2), cex.axis=.9, las =2)
-  
+
   rect(0,0,O2B-2,1,col=colo(70)["G"], border = NA)
   rect(O2B-1,0,B2T-2,1,col=colo(70)["B"], border = NA)
   rect(B2T-1,0,50,1,col=colo(70)["T"], border = NA)
@@ -58,7 +58,7 @@ plot.eq <- function(newEq.all, newEq.veg, O2B, B2T, ymin, ymax)
   points(O2B-1, 1, pch=19)
   points(B2T-1, 1, pch=19)
   title("(b)")
-  
+
   par(cex=1.2)
   plot.template(xlim = c(0,50), ylim = c(ymin,ymax), xticks = c(6,11), yticks = c(6,11), xlab = "increasing temperature", ylab = "herbivore biomass (tons per km2)", col.bg = NA, col.grid = NA,plot.axis=FALSE)
   axis(1, pos=0, at = seq(0,50,le=6), labels = seq(-4,6,2), cex.axis=.9)
@@ -67,8 +67,8 @@ plot.eq <- function(newEq.all, newEq.veg, O2B, B2T, ymin, ymax)
   lines(newEq.veg[,"H"]/1000~gradient, col = 1, lwd = 1.5, lty = 2)
   points(O2B-1, 2, pch=19)
   points(B2T-1, 2, pch=19)
-  title("(c)")# 
-  
+  title("(c)")#
+
 }
 
 #=====================
