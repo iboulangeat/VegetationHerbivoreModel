@@ -84,8 +84,8 @@ head(eq.veg.SA)
 
 ```{r}
 library(randomForest)
-
-dominance = c("T","B","O")[apply(cbind(eq.veg.SA[,-2], 1-forest),1, which.max)]
+forest = eq.veg.SA[,"T"]+eq.veg.SA[,"B"]
+dominance = c("T","B","V")[apply(cbind(eq.veg.SA[,-2], 1-forest),1, which.max)]
 table(dominance)
 mod1 = randomForest(as.factor(dominance)~., data = parDesign[,c("a0","c0","k","dT","dB","dTdB")])
 importance(mod1)
@@ -102,7 +102,7 @@ plot_sa.a()
 ```
 k is the most important for T/B dominance
 
-```{r sensitivity2}
+```{r sensitivity2, fig=TRUE, echo=FALSE}
 plot_sa.b()
 ```
 c is the most important for open dominance
@@ -110,4 +110,3 @@ c is the most important for open dominance
 ```{r, include=FALSE}
 save.image(file="sensivity_analysis.RData")
 ```
-

@@ -170,8 +170,8 @@ plot_equilibrium <- function(ylim.H=3)
   lines(newEq.all[,"H"]/1000~gradient, col = 1, type = "l", lwd = 1.5)
   lines(newEq.veg[,"H"]/1000~gradient, col = 1, lwd = 1.5, lty = 2)
   points(Hmax-1, ylim.H, pch=8)
-  points(O2B-1, 3, pch=19)
-  points(B2T-1, 3, pch=19)
+  points(O2B-1, ylim.H, pch=19)
+  points(B2T-1, ylim.H, pch=19)
   title("(c)")
 }
 ##---
@@ -372,7 +372,7 @@ plot_correlations_pR <- function()
   par(lwd = 2)
   barplot(t(abs(xx)), beside = TRUE, col = 1, density = c(5,0), border = NA, add = T, space = c(0.1, 0.9))
   box(which = "plot", col = "grey", lwd = 2)
-  
+
   # panel3
   xx= matrix(c(cRDt, cLDt, cDnDt), ncol = 2, byrow = T)
   par(lwd = 1)
