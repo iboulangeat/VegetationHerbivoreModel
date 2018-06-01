@@ -108,5 +108,5 @@ plot_sa.b()
 c is the most important for open dominance
 
 ```{r, include=FALSE}
-save.image(file="sensivity_analysis.RData")
+save.image(file="Sensitivity_analysis.RData")
 ```

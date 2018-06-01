@@ -15,12 +15,14 @@
 <!-- library(knitr) -->
 <!-- knit("Sensitivity_analysis.Rmd", "Sensitivity_analysis.md") -->
 
-# Load model
+# Load model an params
 
 
 ```r
+rm(list=ls())
 source("model_fct.r")
 source("analysis_fct.r")
+source("plots_article.r")
 params =  c(
 a0 = 0.05,
 dT = 0.004,
@@ -133,36 +135,30 @@ head(eq.veg.SA)
 
 ```r
 library(randomForest)
-
-dominance = c("T","B","O")[apply(cbind(eq.veg.SA[,-2], 1-forest),1, which.max)]
-```
-
-```
-## Error in cbind(eq.veg.SA[, -2], 1 - forest): objet 'forest' introuvable
-```
-
-```r
+forest = eq.veg.SA[,"T"]+eq.veg.SA[,"B"]
+dominance = c("T","B","V")[apply(cbind(eq.veg.SA[,-2], 1-forest),1, which.max)]
 table(dominance)
 ```
 
 ```
-## Error in table(dominance): objet 'dominance' introuvable
+## dominance
+##    B    T 
+## 4990 5010
 ```
 
 ```r
 mod1 = randomForest(as.factor(dominance)~., data = parDesign[,c("a0","c0","k","dT","dB","dTdB")])
-```
-
-```
-## Error in is.factor(x): objet 'dominance' introuvable
-```
-
-```r
 importance(mod1)
 ```
 
 ```
-## Error in importance(mod1): objet 'mod1' introuvable
+##      MeanDecreaseGini
+## a0           66.91222
+## c0           66.12709
+## k          3065.51376
+## dT          366.82341
+## dB          357.41886
+## dTdB       1076.69667
 ```
 
 ```r
@@ -173,29 +169,20 @@ importance(mod2)
 
 ```
 ##      IncNodePurity
-## a0    0.0007519574
-## c0    0.0384150308
-## k     0.0012087192
-## dT    0.0083858155
-## dB    0.0081997118
-## dTdB  0.0028967082
+## a0    0.0007396706
+## c0    0.0383360092
+## k     0.0011803390
+## dT    0.0083422626
+## dB    0.0082673601
+## dTdB  0.0029445471
 ```
 
 ## Graphiques
 
-
-```
-## Error in varImpPlot(mod1, main = "", labels = c("c", "a", expression(d[T]), : objet 'mod1' introuvable
-```
+![plot of chunk sensitity1](figure/sensitity1-1.png)
 k is the most important for T/B dominance
-
-
-```r
-plot_sa.b()
-```
 
 ![plot of chunk sensitivity2](figure/sensitivity2-1.png)
 c is the most important for open dominance
-
 
 
