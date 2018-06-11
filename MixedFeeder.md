@@ -129,3 +129,54 @@ integraleV.veg = unlist(calcTime.veg[2,])
 
 
 
+
+## pG=100
+
+
+```r
+rm(newEq.all, calcTime.all)
+init.params["pG"] = 100
+calcEq.all = data.frame(t(eqall.fct.Vect(1:grad.div, init.params, par.name, par.clim, modelG)))
+newEq.all = data.frame(matrix(unlist(calcEq.all[[1]]), ncol = 4, byrow = T))
+colnames(newEq.all) = c("T", "R", "B", "H")
+newEq.all[,"V"] = 1 - newEq.all[,"R"] - newEq.all[,"B"] - newEq.all[,"T"]
+lambdamax.all = unlist(calcEq.all[[3]])
+reac.all = unlist(calcEq.all[[4]])
+newEq.all.For = newEq.all[,"T"] + newEq.all[,"B"]
+
+Smax = which.max(newEq.all[,"R"])
+Bmax = which.max(newEq.all[,"B"])
+Hmax = which.max(newEq.all[,"H"])
+open = newEq.all[,"V"]
+dominance = c("T","B", "V")[apply(cbind(newEq.all[,c("T","B")],open), 1, which.max)]
+open.veg = newEq.veg[,"V"]
+dominance.veg = c("T","B", "V")[apply(cbind(newEq.veg[,c("T","B")],open.veg), 1, which.max)]
+O2B = which(dominance=="B") [1]
+B2T = which(dominance=="T") [1]
+O2B.veg = which(dominance.veg=="B") [1]
+B2T.veg = which(dominance.veg=="T") [1]
+```
+
+
+![plot of chunk equiMixFeed100](figure/equiMixFeed100-1.png)
+
+
+```r
+deltaN.all =  rep(NA, 50)
+dd2<-daisy(newEq.all[,-4], metric="euclidean")
+dd.veg2 <- daisy(newEq.veg[,-4], metric="euclidean")
+for (g in 1:50)
+{
+deltaN.all[g] = as.matrix(dd2)[g,g+1]
+}
+
+simu.time = 10000 # max time of simu before reach eq
+
+calcTime.all = calcTime.Vect(1:50, newEq.all, simu.time=10000, woH=FALSE,init.params=init.params, model=modelG)
+deltaT.all = unlist(calcTime.all[1,])
+integraleV.all = unlist(calcTime.all[2,]) 
+```
+
+![plot of chunk transientMixFeed100](figure/transientMixFeed100-1.png)
+
+

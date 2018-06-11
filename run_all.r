@@ -20,7 +20,7 @@ rm(list=ls())
 source("plots_article.r")
 ##---
 
-load("calibration.RData")
+load("Calibration.RData")
 
 pdf(file = "../figs_article/supp_model_impacts.pdf", width = 6, height = 3.5)
 plot_impacts()
@@ -33,7 +33,7 @@ dev.off()
 
 ##----
 
-load("Sensitivity_analysis.RData")
+load("Sensivity_analysis.RData")
 
 pdf(file = "../figs_article/supp_SA_1.pdf")
 plot_sa.a()
@@ -82,12 +82,22 @@ dev.off()
 
 load("MixedFeeder.RData")
 
-pdf(file="../figs_article/equilibrium_mf.pdf", height=12, width=5)
-plot_equilibrium()
+pdf(file="../figs_article/equilibrium_mf.pdf", height=4, width=12)
+plot_equilibrium_mf(ylim.H=5)
 dev.off()
 
 pdf(file="../figs_article/allMetrics_mf.pdf", height=15, width=10)
-plot_transient(ylim.H=5)
+plot_transient()
+dev.off()
+
+load("MixedFeeder100.RData")
+
+pdf(file="../figs_article/equilibrium_mf100.pdf", height=4, width=12)
+plot_equilibrium_mf(ylim.H=5)
+dev.off()
+
+pdf(file="../figs_article/allMetrics_mf100.pdf", height=15, width=10)
+plot_transient()
 dev.off()
 
 ##---
